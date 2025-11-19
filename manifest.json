@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "日语注音助手 (Furigana Helper)",
+  "version": "1.0",
+  "description": "选中日文句子，点击按钮显示注音。",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ]
+}

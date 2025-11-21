@@ -3,6 +3,7 @@ let triggerBtn = null;
 let popup = null;
 // 使用 Map 来存储，Key 是原文，Value 是生成的 HTML
 const furiganaCache = new Map();
+const API_BASE = 'http://127.0.0.1:8000';
 
 // 初始化：创建DOM元素但不显示
 function initElements() {
@@ -144,100 +145,94 @@ async function showFuriganaPopup(text) {
   popup.appendChild(contentDiv);
 }
 
+/** 统一的请求函数 */
+async function requestApi(endpoint, payload) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('API请求失败:', err);
+    return {
+      error: true,
+      html: `<span style="color:red; font-size:12px;">无法连接后端<br>请检查 python 服务</span>`,
+    };
+  }
+}
+
+/** 渲染 analyze token */
+function renderToken(token, highlights) {
+  let html = '';
+
+  if (token.kanji_base && token.furigana) {
+    html = `<ruby>${token.kanji_base}<rt>${token.furigana}</rt></ruby>${token.okurigana}`;
+  } else {
+    html = token.surface;
+  }
+
+  if (highlights.includes(token.surface)) {
+    html = `<span style="color:#ff264e">${html}</span>`;
+  }
+
+  return html;
+}
+
 /**
  * 模拟 API 调用。
  * 在实际生产中，你需要在这里 fetch 一个后端服务（如 Yahoo Japan API 或 Kuroshiro）。
  */
 // content.js
 
+/** 接口1：后端直接返回html */
 async function fetchFurigana(text) {
   if (furiganaCache.has(text)) {
     console.log('命中缓存，跳过网络请求:', text);
     return furiganaCache.get(text);
   }
-  // 指向你的 Python 本地服务器
-  const API_URL = 'http://127.0.0.1:8000/furigana';
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: text }),
-    });
+  const data = await requestApi('/furigana', { text });
+  if (data.error) return data.html;
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    // 请求成功后，将结果存入 Map
-    furiganaCache.set(text, data.html);
-    console.log('data', data.html);
-    return data.html; // 直接返回后端生成的 HTML
-  } catch (error) {
-    console.error('API 请求失败:', error);
-    return `<span style="color:red; font-size:12px;">连接本地服务器失败<br>请确认 python main.py 已运行</span>`;
-  }
+  console.log('data', data.html);
+  furiganaCache.set(text, data.html);
+  return data.html;
 }
 
-async function fetchFurigana1(text, hls = []) {
+/** 接口2：前端拼HTML */
+async function fetchFurigana1(text, highlights = []) {
+  const cacheKey = text + '|||' + JSON.stringify(highlights.sort());
   // 如果缓存里已经有这句话，直接返回，不再发起网络请求
-  if (furiganaCache.has(text)) {
-    console.log('命中缓存，跳过网络请求:', text);
-    return furiganaCache.get(text);
+  if (furiganaCache.has(cacheKey)) {
+    console.log('命中缓存:', cacheKey);
+    return furiganaCache.get(cacheKey);
   }
-  // 1. 修改为新的 analyze 接口地址
-  const API_URL = 'http://127.0.0.1:8000/analyze';
+  const data = await requestApi('/analyze', { text });
+  if (data.error) return data.html;
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: text }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('data:', data);
-    // 2. 前端拼接 HTML 逻辑
-    // data.results 是一个数组，包含分词后的对象
-    let htmlOutput = '';
-
-    if (data.results && Array.isArray(data.results)) {
-      data.results.forEach((token) => {
-        // 判断是否有 kanji_base 和 furigana，如果有则渲染 ruby
-        let html = '';
-        if (token.kanji_base && token.furigana) {
-          // 结构: <ruby>汉字部分<rt>读音</rt></ruby>送假名
-          html += `<ruby>${token.kanji_base}<rt>${token.furigana}</rt></ruby>${token.okurigana}`;
-        } else {
-          // 没有汉字，直接显示原文 (surface)
-          html += token.surface;
-        }
-        if (hls.includes(token.surface)) {
-          html = `<span style="color:#ff264e;">${html}</span>`;
-        }
-        htmlOutput += html;
-      });
-    } else {
-      return '数据解析错误';
-    }
-
-    // 请求成功后，将结果存入 Map
-    furiganaCache.set(text, htmlOutput);
-
-    return htmlOutput;
-  } catch (error) {
-    console.error('API 请求失败:', error);
-    return `<span style="color:red; font-size:12px;">无法连接后端<br>请检查 python 服务</span>`;
+  console.log('data:', data);
+  if (!data.results || !Array.isArray(data.results)) {
+    return '数据解析错误';
   }
+
+  const htmlOutput = data.results
+    .map((token) => renderToken(token, highlights))
+    .join('');
+
+  furiganaCache.set(cacheKey, htmlOutput);
+  return htmlOutput;
 }
 
 // 启动

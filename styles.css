@@ -45,3 +45,37 @@
   color: #555;
   font-size: 0.6em;
 }
+
+/* 发音按钮容器 */
+.furigana-header {
+  display: flex;
+  justify-content: flex-end; /* 按钮靠右显示 */
+  margin-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+/* 发音按钮本体 */
+.furigana-audio-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #4285f4;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.furigana-audio-btn:hover {
+  background-color: #f0f5ff;
+}
+
+.furigana-audio-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}

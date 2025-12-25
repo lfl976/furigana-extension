@@ -4,6 +4,7 @@ let popup = null;
 // 使用 Map 来存储，Key 是原文，Value 是生成的 HTML
 const furiganaCache = new Map();
 const API_BASE = 'http://127.0.0.1:8000';
+let jaVoice = null;
 
 // 初始化：创建DOM元素但不显示
 function initElements() {
@@ -78,6 +79,16 @@ function hideUI() {
   if (popup) popup.style.display = 'none';
 }
 
+// 注册 voiceschanged，确保语音加载完成后拿到正确的日语 voice
+window.speechSynthesis.onvoiceschanged = () => {
+  const voices = window.speechSynthesis.getVoices();
+  // 优先找 Google 日本语 或 Microsoft Ayumi/Haruka 等
+  jaVoice =
+    voices.find((v) => v.lang === 'ja-JP' && v.name.includes('Google')) ||
+    voices.find((v) => v.lang === 'ja-JP') ||
+    null;
+};
+
 // --- 新增：TTS 发音函数 ---
 function speakJapanese(text) {
   // 取消当前正在播放的语音（防止连点重叠）
@@ -90,10 +101,6 @@ function speakJapanese(text) {
 
   // 尝试寻找最佳的日语发音人（可选优化）
   const voices = window.speechSynthesis.getVoices();
-  // 优先找 Google 日本语 或 Microsoft Ayumi/Haruka 等
-  const jaVoice =
-    voices.find((v) => v.lang === 'ja-JP' && v.name.includes('Google')) ||
-    voices.find((v) => v.lang === 'ja-JP');
   if (jaVoice) utterance.voice = jaVoice;
 
   window.speechSynthesis.speak(utterance);

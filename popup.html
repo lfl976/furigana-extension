@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        width: 350px;
+        padding: 15px;
+        font-family: sans-serif;
+      }
+      h3 {
+        margin-top: 0;
+        color: #4285f4;
+      }
+
+      /* 输入区域 */
+      textarea {
+        width: 100%;
+        height: 80px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 5px;
+        box-sizing: border-box; /* 防止padding撑破宽度 */
+        font-family: 'Yu Mincho', serif;
+      }
+
+      button {
+        width: 100%;
+        padding: 8px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.2s;
+        margin-bottom: 10px;
+      }
+
+      #convert-btn {
+        background-color: #4285f4;
+        color: white;
+      }
+      #convert-btn:hover {
+        background-color: #3367d6;
+      }
+
+      #batch-btn {
+        background-color: #34a853;
+        color: white;
+      }
+      #batch-btn:hover {
+        background-color: #2d8f47;
+      }
+
+      /* 结果显示区域 */
+      #result-area {
+        min-height: 50px;
+        padding: 10px;
+        border: 1px dashed #ddd;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-size: 18px;
+        line-height: 2;
+      }
+
+      hr {
+        border: 0;
+        border-top: 1px solid #eee;
+        margin: 15px 0;
+      }
+
+      /* Ruby 样式 */
+      ruby {
+        margin: 0 2px;
+      }
+      rt {
+        color: #555;
+        font-size: 0.6em;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>日语注音助手</h3>
+
+    <!-- 功能1：输入框注音 -->
+    <textarea id="input-text" placeholder="ここに日本語を入力..."></textarea>
+    <button id="convert-btn">显示注音</button>
+    <div id="result-area"></div>
+
+    <hr />
+
+    <!-- 功能2：原有的一键替换 -->
+    <button id="batch-btn">当前网页一键注音</button>
+    <div id="status-msg" style="font-size: 12px; color: #666"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

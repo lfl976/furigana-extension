@@ -1,5 +1,11 @@
 // popup.js
 
+const DEFAULT_BATCH_SELECTOR = '.text_info > span:first-child:not(.pill-label)';
+const selectorInput = document.getElementById('selector-input');
+
+selectorInput.value =
+  localStorage.getItem('batchSelector') || DEFAULT_BATCH_SELECTOR;
+
 // ==========================================
 // 逻辑 1: Popup 输入框注音
 // ==========================================
@@ -42,6 +48,10 @@ document.getElementById('convert-btn').addEventListener('click', async () => {
 document.getElementById('batch-btn').addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const statusDiv = document.getElementById('status-msg');
+  const selector = selectorInput.value.trim() || DEFAULT_BATCH_SELECTOR;
+
+  selectorInput.value = selector;
+  localStorage.setItem('batchSelector', selector);
 
   statusDiv.textContent = '正在处理页面...';
 
@@ -50,8 +60,13 @@ document.getElementById('batch-btn').addEventListener('click', async () => {
     {
       target: { tabId: tab.id },
       func: injectedPageScript, // 指定要在页面里跑的函数
+      args: [selector],
     },
     () => {
+      if (chrome.runtime.lastError) {
+        statusDiv.textContent = `处理失败：${chrome.runtime.lastError.message}`;
+        return;
+      }
       statusDiv.textContent = '处理完成！';
     }
   );
@@ -61,7 +76,7 @@ document.getElementById('batch-btn').addEventListener('click', async () => {
  * 这个函数会被注入到网页中执行。
  * 注意：它不能访问 popup.js 外部的变量，所以所有依赖（包括API地址、fetch函数）都要写在里面。
  */
-async function injectedPageScript() {
+async function injectedPageScript(selector) {
   const API_URL = 'http://127.0.0.1:8000/analyze';
 
   // 在注入脚本内部定义 fetch 函数
@@ -96,9 +111,13 @@ async function injectedPageScript() {
   }
 
   // --- 原有的业务逻辑 ---
-  const list = document.querySelectorAll(
-    '.text_info > span:first-child:not(.pill-label)'
-  );
+  let list;
+  try {
+    list = document.querySelectorAll(selector);
+  } catch (e) {
+    console.error('无效的 CSS 选择器:', selector, e);
+    return;
+  }
 
   // 使用 for...of 循环配合 await，或者 Promise.all
   for (const item of list) {

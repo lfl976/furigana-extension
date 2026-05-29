@@ -43,8 +43,8 @@
   margin: 0 2px;
 }
 #furigana-popup rt {
-  color: #555;
-  font-size: 0.6em;
+  color: red !important;
+  font-size: 0.75em !important;
 }
 
 /* 发音按钮容器 */

@@ -101,6 +101,10 @@ function speakJapanese(text) {
 
   // 尝试寻找最佳的日语发音人（可选优化）
   const voices = window.speechSynthesis.getVoices();
+  // 优先找 Google 日本语 或 Microsoft Ayumi/Haruka 等
+  const jaVoice =
+    voices.find((v) => v.lang === 'ja-JP' && v.name.includes('Google')) ||
+    voices.find((v) => v.lang === 'ja-JP');
   if (jaVoice) utterance.voice = jaVoice;
 
   window.speechSynthesis.speak(utterance);
